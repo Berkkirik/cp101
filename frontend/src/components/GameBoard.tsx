@@ -4,7 +4,7 @@
  * Handles game state, user interactions, and displays results.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Choice, PlayResponse, GameStats } from '../types/game';
 import { gameApi, ApiError } from '../services/api';
 import GameResult from './GameResult';
@@ -19,10 +19,16 @@ const CHOICE_ICONS: Record<Choice, string> = {
   scissors: '✂️',
 };
 
-const GameBoard: React.FC = () => {
+interface GameBoardProps {
+  playSound: (soundType: 'hover' | 'click' | 'battle' | 'win' | 'lose' | 'draw' | 'stat', delay?: number) => void;
+}
+
+const GameBoard: React.FC<GameBoardProps> = ({ playSound }) => {
   const [result, setResult] = useState<PlayResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedChoice, setSelectedChoice] = useState<Choice | null>(null);
+  const [battlePhase, setBattlePhase] = useState(false);
   const [stats, setStats] = useState<GameStats>({
     wins: 0,
     losses: 0,
@@ -31,15 +37,36 @@ const GameBoard: React.FC = () => {
   });
 
   /**
-   * Handle player's choice and play a round
+   * Handle player's choice and play a round with animations
    */
   const handleChoice = async (choice: Choice) => {
     setLoading(true);
     setError(null);
+    setSelectedChoice(choice);
+
+    // Play click sound
+    playSound('click');
+
+    // Wait a bit for selection animation
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
       const gameResult = await gameApi.play(choice);
+
+      // Battle phase animation
+      setBattlePhase(true);
+      playSound('battle');
+
+      // Wait for battle animation
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       setResult(gameResult);
+      setBattlePhase(false);
+
+      // Play result sound after a short delay
+      setTimeout(() => {
+        playSound(gameResult.outcome);
+      }, 200);
 
       // Update statistics
       setStats((prevStats) => ({
@@ -55,6 +82,8 @@ const GameBoard: React.FC = () => {
         setError('An unexpected error occurred');
       }
       console.error('Game error:', err);
+      setSelectedChoice(null);
+      setBattlePhase(false);
     } finally {
       setLoading(false);
     }
@@ -64,14 +93,17 @@ const GameBoard: React.FC = () => {
    * Reset the game for a new round
    */
   const handlePlayAgain = () => {
+    playSound('click');
     setResult(null);
     setError(null);
+    setSelectedChoice(null);
   };
 
   /**
    * Reset all statistics
    */
   const handleResetStats = () => {
+    playSound('click');
     setStats({
       wins: 0,
       losses: 0,
@@ -80,6 +112,7 @@ const GameBoard: React.FC = () => {
     });
     setResult(null);
     setError(null);
+    setSelectedChoice(null);
   };
 
   return (
@@ -98,12 +131,13 @@ const GameBoard: React.FC = () => {
           {(Object.keys(CHOICE_ICONS) as Choice[]).map((choice) => (
             <button
               key={choice}
-              className="choice-button"
+              className={`choice-button ${selectedChoice === choice ? 'selected' : ''}`}
               onClick={() => handleChoice(choice)}
+              onMouseEnter={() => playSound('hover')}
               disabled={loading || !!result}
               aria-label={`Choose ${choice}`}
             >
-              {CHOICE_ICONS[choice]}
+              <span className="choice-emoji">{CHOICE_ICONS[choice]}</span>
               <span>{choice}</span>
             </button>
           ))}
@@ -116,10 +150,11 @@ const GameBoard: React.FC = () => {
       {/* Game result */}
       {result && !loading && (
         <>
-          <GameResult result={result} choiceIcons={CHOICE_ICONS} />
+          <GameResult result={result} choiceIcons={CHOICE_ICONS} battlePhase={battlePhase} />
           <button
             className="play-again-button"
             onClick={handlePlayAgain}
+            onMouseEnter={() => playSound('hover')}
             aria-label="Play again"
           >
             Play Again
@@ -128,7 +163,7 @@ const GameBoard: React.FC = () => {
       )}
 
       {/* Statistics */}
-      <GameStatistics stats={stats} onReset={handleResetStats} />
+      <GameStatistics stats={stats} onReset={handleResetStats} playSound={playSound} />
     </div>
   );
 };

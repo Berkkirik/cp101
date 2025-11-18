@@ -1,0 +1,117 @@
+/**
+ * SCSS Mixins - Reusable animation patterns
+ */
+
+@use './variables' as *;
+
+// GPU acceleration for smooth animations
+@mixin gpu-accelerate {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+// Floating animation mixin
+@mixin float-animation($duration: 3s, $distance: 10px) {
+  animation: float $duration ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-$distance);
+    }
+  }
+}
+
+// Wiggle/shake animation mixin
+@mixin wiggle-animation($intensity: 5deg) {
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate($intensity); }
+    75% { transform: rotate(-$intensity); }
+  }
+}
+
+// Glow pulse mixin
+@mixin glow-pulse($color, $intensity: 0.4) {
+  animation: glowPulse 2s ease-in-out infinite;
+
+  @keyframes glowPulse {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba($color, $intensity);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba($color, $intensity * 1.5);
+    }
+  }
+}
+
+// Spotlight effect
+@mixin spotlight($color: $color-primary) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba($color, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity $transition-normal;
+  }
+
+  &.active::after {
+    opacity: 1;
+  }
+}
+
+// Number counter roll animation
+@mixin counter-roll {
+  display: inline-block;
+  transition: transform $duration-normal $ease-smooth;
+
+  &.updating {
+    animation: counterRoll 0.5s $ease-bounce;
+  }
+
+  @keyframes counterRoll {
+    0% { transform: rotateX(0deg); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
+  }
+}
+
+// Confetti particle
+@mixin confetti-particle($index) {
+  $random-x: random(100) - 50;
+  $random-delay: random(500) / 1000 + s;
+  $random-duration: (random(1000) + 1500) / 1000 + s;
+
+  left: 50%;
+  animation: confettiFall $random-duration linear $random-delay forwards;
+
+  @keyframes confettiFall {
+    to {
+      transform: translateX(#{$random-x}vw) translateY(100vh) rotate(720deg);
+      opacity: 0;
+    }
+  }
+}
+
+// Typing cursor effect
+@mixin typing-cursor {
+  &::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+}

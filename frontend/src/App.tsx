@@ -7,10 +7,12 @@
 import { useEffect, useState } from 'react';
 import GameBoard from './components/GameBoard';
 import { gameApi } from './services/api';
-import './styles/App.css';
+import { useSound } from './hooks/useSound';
+import './styles/App.scss';
 
 function App() {
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const { playSound, isMuted, toggleMute } = useSound();
 
   useEffect(() => {
     // Check backend health on mount
@@ -25,6 +27,14 @@ function App() {
   return (
     <div className="app">
       <header className="header">
+        <button
+          className="sound-toggle"
+          onClick={toggleMute}
+          aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+          title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </button>
         <h1>🪨 Rock Paper Scissors ✂️</h1>
         <p>Test your luck against the computer!</p>
         {backendStatus === 'offline' && (
@@ -38,7 +48,7 @@ function App() {
         {backendStatus === 'checking' ? (
           <div className="loading">Connecting to server...</div>
         ) : backendStatus === 'online' ? (
-          <GameBoard />
+          <GameBoard playSound={playSound} />
         ) : (
           <div className="game-container">
             <p style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>

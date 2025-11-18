@@ -1,0 +1,752 @@
+/**
+ * Main application styles - Enhanced with playful animations
+ */
+
+@use './variables' as *;
+@use './mixins' as *;
+@use './animations' as *;
+@use 'sass:math';
+
+// ========================================
+// BASE STYLES
+// ========================================
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, $color-bg 0%, $color-bg-light 50%, $color-bg 100%);
+  background-attachment: fixed;
+  color: $color-text;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+// ========================================
+// LAYOUT
+// ========================================
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: $spacing-xl;
+  width: 100%;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: $spacing-2xl;
+  animation: slideDown 0.8s ease-out;
+  position: relative;
+
+  h1 {
+    font-size: 3rem;
+    margin-bottom: $spacing-md;
+    background: linear-gradient(135deg, $color-primary-light, $color-primary, $color-primary-dark);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 40px rgba($color-primary, 0.3);
+  }
+
+  p {
+    color: $color-text-muted;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+}
+
+// Sound toggle button
+.sound-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba($color-bg-light, 0.8);
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+  cursor: pointer;
+  transition: all $transition-normal;
+  font-size: 1.5rem;
+  backdrop-filter: blur(10px);
+
+  &:hover {
+    transform: scale(1.1);
+    border-color: $color-primary;
+    box-shadow: 0 0 20px rgba($color-primary, 0.3);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// ========================================
+// GAME CONTAINER
+// ========================================
+
+.game-container {
+  background: rgba($color-bg-light, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  padding: $spacing-2xl;
+  box-shadow: $shadow-xl, 0 0 0 1px rgba($color-primary, 0.1);
+  animation: scaleIn 0.5s $ease-spring;
+}
+
+// ========================================
+// CHOICES SECTION
+// ========================================
+
+.choices-section {
+  margin-bottom: $spacing-xl;
+
+  h2 {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $color-text;
+    letter-spacing: -0.01em;
+  }
+}
+
+.choices-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+}
+
+.choice-button {
+  @include gpu-accelerate;
+  background: linear-gradient(135deg, $color-bg-light, $color-bg-lighter);
+  border: 2px solid $color-border;
+  border-radius: $radius-lg;
+  padding: $spacing-xl;
+  font-size: 4rem;
+  cursor: pointer;
+  transition: all $transition-normal;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  position: relative;
+  overflow: hidden;
+  box-shadow: $shadow-md;
+
+  // Idle floating animation
+  animation: float 3s ease-in-out infinite;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba($color-primary, 0.1), transparent);
+    opacity: 0;
+    transition: opacity $transition-normal;
+  }
+
+  // Hover state
+  &:hover:not(:disabled) {
+    border-color: $color-primary;
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 12px 24px rgba($color-primary, 0.4), 0 0 0 1px $color-primary;
+    animation: wiggle 0.5s ease-in-out, float 3s ease-in-out infinite;
+
+    &::before {
+      opacity: 1;
+    }
+
+    .choice-emoji {
+      animation: glowPulse 1s ease-in-out infinite;
+    }
+  }
+
+  // Click/active state
+  &:active:not(:disabled) {
+    animation: punchOut 0.3s $ease-bounce;
+  }
+
+  // Selected state (waiting for result)
+  &.selected {
+    border-color: $color-primary-light;
+    box-shadow: 0 0 40px rgba($color-primary, 0.6);
+    animation: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba($color-primary, 0.3) 0%, transparent 70%);
+      pointer-events: none;
+    }
+  }
+
+  // Disabled state
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+    animation: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-primary;
+    outline-offset: 4px;
+  }
+
+  span {
+    font-size: 1rem;
+    text-transform: capitalize;
+    color: $color-text;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.choice-emoji {
+  transition: filter $transition-normal;
+}
+
+// ========================================
+// RESULT SECTION
+// ========================================
+
+.result-section {
+  margin-top: $spacing-xl;
+  padding: $spacing-xl;
+  background: linear-gradient(135deg, rgba($color-bg-light, 0.8), rgba($color-bg-lighter, 0.6));
+  backdrop-filter: blur(10px);
+  border-radius: $radius-lg;
+  border: 2px solid $color-primary;
+  box-shadow: $shadow-lg, 0 0 20px rgba($color-primary, 0.2);
+  animation: resultSlideIn 0.5s $ease-spring;
+  position: relative;
+  overflow: hidden;
+
+  &.win {
+    border-color: $color-success;
+    box-shadow: $shadow-lg, 0 0 30px rgba($color-success, 0.3);
+  }
+
+  &.lose {
+    border-color: $color-danger;
+    box-shadow: $shadow-lg, 0 0 30px rgba($color-danger, 0.3);
+  }
+
+  &.draw {
+    border-color: $color-warning;
+    box-shadow: $shadow-lg, 0 0 30px rgba($color-warning, 0.3);
+  }
+
+  // Screen shake on battle
+  &.battle-shake {
+    animation: screenShake 0.5s ease-in-out, resultSlideIn 0.5s $ease-spring;
+  }
+}
+
+// Flash effect overlay for collision
+.collision-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+
+  &.active {
+    animation: collisionFlash 0.3s ease-out;
+  }
+}
+
+.result-choices {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: $spacing-xl;
+  flex-wrap: wrap;
+  gap: $spacing-xl;
+}
+
+.result-choice {
+  text-align: center;
+
+  &.player-choice {
+    animation: flyInFromLeft 0.8s $ease-spring;
+  }
+
+  &.computer-choice {
+    animation: flyInFromRight 0.8s $ease-spring;
+  }
+
+  // Win animations
+  &.player-choice.winner {
+    animation: flyInFromLeft 0.8s $ease-spring, trophyBounce 1s ease-in-out 0.8s;
+  }
+
+  &.computer-choice.winner {
+    animation: flyInFromRight 0.8s $ease-spring, computerCelebrate 1s ease-in-out 0.8s;
+  }
+
+  // Draw animations
+  &.draw-shake {
+    animation: flyInFromLeft 0.8s $ease-spring, handshake 0.6s ease-in-out 0.8s;
+
+    &.computer-choice {
+      animation: flyInFromRight 0.8s $ease-spring, handshake 0.6s ease-in-out 0.8s;
+    }
+  }
+
+  // Loser sad animation
+  &.loser {
+    animation-name: flyInFromLeft, sadShake;
+    animation-duration: 0.8s, 0.5s;
+    animation-timing-function: $ease-spring, ease-in-out;
+    animation-delay: 0s, 0.8s;
+
+    &.computer-choice {
+      animation-name: flyInFromRight, sadShake;
+    }
+  }
+}
+
+.result-choice-icon {
+  font-size: 5rem;
+  margin-bottom: $spacing-md;
+  filter: drop-shadow(0 4px 8px $color-shadow);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.result-choice-label {
+  font-size: 0.875rem;
+  color: $color-text-muted;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  margin-bottom: $spacing-xs;
+}
+
+.result-vs {
+  font-size: 2.5rem;
+  color: $color-primary;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba($color-primary, 0.5);
+  animation: vsExplode 0.6s $ease-bounce 0.4s both;
+}
+
+.result-message {
+  text-align: center;
+  font-size: 1.75rem;
+  margin-bottom: $spacing-md;
+  font-weight: 700;
+  animation: messageSlideIn 0.7s $ease-spring;
+  position: relative;
+  overflow: hidden;
+
+  &.win {
+    color: $color-success;
+    text-shadow: 0 0 20px rgba($color-success, 0.4);
+  }
+
+  &.lose {
+    color: $color-danger;
+    text-shadow: 0 0 20px rgba($color-danger, 0.4);
+  }
+
+  &.draw {
+    color: $color-warning;
+    text-shadow: 0 0 20px rgba($color-warning, 0.4);
+  }
+}
+
+// Confetti particles for win
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -10px;
+  opacity: 1;
+
+  &.color-1 { background: $color-success; }
+  &.color-2 { background: $color-primary; }
+  &.color-3 { background: $color-warning; }
+  &.color-4 { background: #f472b6; }
+  &.color-5 { background: #a78bfa; }
+
+  @for $i from 1 through 50 {
+    &:nth-child(#{$i}) {
+      left: math.random(100) * 1%;
+      animation: confettiFall math.div(math.random(30) + 20, 10) + s linear math.div(math.random(20), 10) + s forwards;
+      animation-delay: math.div(math.random(1000), 1000) + s;
+    }
+  }
+}
+
+// ========================================
+// STATISTICS SECTION
+// ========================================
+
+.stats-section {
+  margin-top: $spacing-xl;
+  padding: $spacing-xl;
+  background: linear-gradient(135deg, rgba($color-bg-light, 0.7), rgba($color-bg-lighter, 0.5));
+  backdrop-filter: blur(10px);
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-md;
+
+  h3 {
+    text-align: center;
+    margin-bottom: $spacing-xl;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $color-text;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: $spacing-md;
+}
+
+.stat-item {
+  text-align: center;
+  padding: $spacing-lg;
+  background: linear-gradient(135deg, rgba($color-bg-light, 0.9), rgba($color-bg-lighter, 0.7));
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  transition: all $transition-normal;
+  box-shadow: $shadow-sm;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: $shadow-md;
+    border-color: $color-primary-light;
+  }
+
+  &.updating {
+    animation: statHighlight 0.6s ease-in-out;
+  }
+
+  &.milestone {
+    animation: milestonePop 0.8s $ease-bounce;
+  }
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: $spacing-sm;
+  background: linear-gradient(135deg, $color-text, $color-text-muted);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+
+  &.rolling {
+    animation: counterRoll 0.5s $ease-bounce;
+  }
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: $color-text-muted;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+// Win percentage progress bar
+.win-percentage-bar {
+  margin-top: $spacing-md;
+  height: 6px;
+  background: rgba($color-bg-lighter, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+
+  .progress {
+    height: 100%;
+    background: linear-gradient(90deg, $color-success, $color-success-dark);
+    border-radius: 3px;
+    transition: width 0.6s $ease-smooth;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shineSlide 2s linear infinite;
+    }
+  }
+}
+
+// ========================================
+// BUTTONS
+// ========================================
+
+.play-again-button {
+  @include gpu-accelerate;
+  width: 100%;
+  padding: $spacing-lg;
+  font-size: 1.125rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+  color: white;
+  border: none;
+  border-radius: $radius-lg;
+  cursor: pointer;
+  transition: all $transition-normal;
+  margin-top: $spacing-md;
+  box-shadow: $shadow-md, 0 0 20px rgba($color-primary, 0.3);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg, 0 0 30px rgba($color-primary, 0.5);
+
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    animation: buttonPress 0.2s ease-in-out;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-primary-light;
+    outline-offset: 3px;
+  }
+}
+
+.reset-button {
+  @extend .play-again-button;
+  background: linear-gradient(135deg, $color-danger, $color-danger-dark);
+  box-shadow: $shadow-md, 0 0 20px rgba($color-danger, 0.3);
+
+  &:hover {
+    box-shadow: $shadow-lg, 0 0 30px rgba($color-danger, 0.5);
+    animation: wiggle 0.3s ease-in-out;
+  }
+}
+
+// ========================================
+// LOADING & ERROR STATES
+// ========================================
+
+.loading {
+  text-align: center;
+  padding: $spacing-xl;
+  color: $color-primary;
+  font-size: 1.25rem;
+  font-weight: 600;
+  position: relative;
+
+  &::before {
+    content: '🪨';
+    display: block;
+    font-size: 3rem;
+    margin-bottom: $spacing-md;
+    animation: emojiSpin 1.5s linear infinite;
+  }
+}
+
+.error-message {
+  background: linear-gradient(135deg, rgba($color-danger, 0.15), rgba($color-danger-dark, 0.1));
+  border: 2px solid $color-danger;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  color: $color-danger;
+  text-align: center;
+  font-weight: 600;
+  box-shadow: 0 0 20px rgba($color-danger, 0.2);
+  animation: shake 0.5s ease-in-out;
+}
+
+// ========================================
+// RESPONSIVE DESIGN
+// ========================================
+
+@media (max-width: 768px) {
+  .app {
+    padding: $spacing-md;
+  }
+
+  .header h1 {
+    font-size: 2.25rem;
+  }
+
+  .header p {
+    font-size: 1rem;
+  }
+
+  .game-container {
+    padding: $spacing-lg;
+  }
+
+  .choices-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .choices-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-md;
+  }
+
+  .choice-button {
+    font-size: 2.5rem;
+    padding: $spacing-lg;
+
+    span {
+      font-size: 0.875rem;
+    }
+  }
+
+  .result-section {
+    padding: $spacing-lg;
+  }
+
+  .result-choice-icon {
+    font-size: 3.5rem;
+  }
+
+  .result-vs {
+    font-size: 2rem;
+  }
+
+  .result-message {
+    font-size: 1.5rem;
+  }
+
+  .stats-section {
+    padding: $spacing-lg;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-value {
+    font-size: 2rem;
+  }
+
+  .sound-toggle {
+    font-size: 1.2rem;
+    padding: $spacing-xs $spacing-sm;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.75rem;
+  }
+
+  .choices-grid {
+    gap: $spacing-sm;
+  }
+
+  .choice-button {
+    font-size: 2rem;
+    padding: $spacing-md;
+
+    span {
+      font-size: 0.75rem;
+    }
+  }
+
+  .result-choice-icon {
+    font-size: 3rem;
+  }
+
+  .result-vs {
+    font-size: 1.5rem;
+  }
+
+  .result-message {
+    font-size: 1.25rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+  }
+}
+
+// ========================================
+// ACCESSIBILITY
+// ========================================
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .choice-button,
+  .result-section,
+  .stats-section {
+    border-width: 3px;
+  }
+}
